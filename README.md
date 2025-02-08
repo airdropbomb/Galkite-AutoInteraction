@@ -10,7 +10,7 @@
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/Svz1404/Galkite-AutoInteraction.git
+git clone https://github.com/airdropbomb/Galkite-AutoInteraction.git
 ```
 
 2. Navigate to the project directory:
