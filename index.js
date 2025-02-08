@@ -13,7 +13,7 @@ function askQuestion(query) {
 }
 
 async function main() {
-  cfonts.say('NT Exhaust', {
+  cfonts.say('ADB Node', {
     font: 'block',
     align: 'center',
     colors: ['cyan', 'magenta'],
@@ -24,7 +24,7 @@ async function main() {
     maxLength: '0',
   });
 
-  console.log(chalk.green("=== Telegram Channel : NT Exhaust ( @NTExhaust ) ===\n"));
+  console.log(chalk.green("=== Telegram Channel : ADB Node ( @airdropbombnode ) ===\n"));
 
   const numberOfInteractions = await askQuestion(chalk.yellow("Enter the number of interactions: "));
   const delayBetweenInteractions = await askQuestion(chalk.yellow("Enter the delay between interactions (in seconds): "));
