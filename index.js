@@ -27,10 +27,16 @@ async function main() {
   console.log(chalk.green("=== Telegram Channel : NT Exhaust ( @NTExhaust ) ===\n"));
 
   const numberOfInteractions = await askQuestion(chalk.yellow("Enter the number of interactions: "));
+  const delayBetweenInteractions = await askQuestion(chalk.yellow("Enter the delay between interactions (in seconds): "));
 
   for (let i = 1; i <= parseInt(numberOfInteractions); i++) {
     console.log(chalk.blue(`\nProcessing interaction ${i} of ${numberOfInteractions}`));
     await reportUsage();
+
+    if (i < parseInt(numberOfInteractions)) {
+      console.log(chalk.yellow(`⏳ Waiting ${delayBetweenInteractions} seconds before the next interaction...`));
+      await new Promise(resolve => setTimeout(resolve, delayBetweenInteractions * 1000));
+    }
   }
 
   rl.close();
