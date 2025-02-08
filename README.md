@@ -30,7 +30,9 @@ npm install node-fetch cfonts chalk readline
 ```bash
 nano index.js
 ```
-(Watch the video dont skip it)
+Wallet address must use small capital letter...
+example - 0xCfC345GeiF...... (not use)
+        - 0xcfc345geif.......(use that format)
 
 5. Run it
 
