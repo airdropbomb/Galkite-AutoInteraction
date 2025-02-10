@@ -22,7 +22,7 @@ cd Galkite-AutoInteraction
 3. Install dependencies:
 
 ```bash
-npm install node-fetch cfonts chalk readline
+npm install ora
 ```
 
 4. Fil your wallet address on script
