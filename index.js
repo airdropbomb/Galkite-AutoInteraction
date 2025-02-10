@@ -68,7 +68,7 @@ async function reportUsage() {
     wallet_address: walletAddress,
     agent_id: "deployment_p5J9lz1Zxe7CYEoo0TZpRVay",
     request_text: "What is Kite AI?",
-    response_text: "Kite AI is a purpose-built Layer 1 blockchain designed for the AI economy, utilizing a novel consensus mechanism called Proof of AI (PoAI). It enables transparent and fair collaboration in AI development through EVM-compatible subnets for data, models, and intelligent agents. Kite AI focuses on democratizing AI access, seamless blockchain integration, and fostering an ecosystem for developers and researchers.",
+    response_text: "Kite AI is an EVM-compatible Layer 1 blockchain designed specifically for AI applications. It utilizes a unique consensus mechanism called Proof of AI (PoAI) to ensure fair and transparent attribution of contributions within the AI ecosystem. Kite AI includes tools for developers, data pools for advanced research, and an application marketplace, facilitating collaboration across industries and promoting the ownership and control of AI models and data.",
     request_metadata: null
   };
 
