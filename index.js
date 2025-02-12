@@ -24,6 +24,10 @@ async function main(numberOfInteractions) {
     console.log(chalk.blue(`\nProcessing interaction ${i + 1} of ${numberOfInteractions}`));
     const { agent_id, request_text, response_text } = interactions[i % interactions.length];
     await retryOperation(() => reportUsage(agent_id, request_text, response_text));
+    
+    // Add a delay of 30 seconds between interactions
+    console.log(chalk.yellow("\u23F3 Waiting 30 seconds before next interaction..."));
+    await new Promise(resolve => setTimeout(resolve, 30000));
   }
 
   console.log(chalk.magenta("\u23F3 All interactions completed. Waiting 24 hours before restarting..."));
