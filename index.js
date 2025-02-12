@@ -1,19 +1,10 @@
 import fetch from 'node-fetch';
 import cfonts from "cfonts";
 import chalk from 'chalk';
-import readline from 'readline';
 import ora from 'ora';
+import fs from 'fs';
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-function askQuestion(query) {
-  return new Promise(resolve => rl.question(query, resolve));
-}
-
-async function main() {
+async function main(numberOfInteractions) {
   cfonts.say('ADB Node', {
     font: 'block',
     align: 'center',
@@ -27,22 +18,29 @@ async function main() {
 
   console.log(chalk.green("=== Telegram Channel : ADB Node ( @airdropbombnode ) ===\n"));
 
-  const numberOfInteractions = await askQuestion(chalk.yellow("Enter the number of interactions: "));
+  const interactions = loadInteractionsFromFile('interactions.txt');
 
-  for (let i = 1; i <= parseInt(numberOfInteractions); i++) {
-    console.log(chalk.blue(`\nProcessing interaction ${i} of ${numberOfInteractions}`));
-    await retryOperation(reportUsage); // Keep retrying until success
+  for (let i = 0; i < parseInt(numberOfInteractions); i++) {
+    console.log(chalk.blue(`\nProcessing interaction ${i + 1} of ${numberOfInteractions}`));
+    const { agent_id, request_text, response_text } = interactions[i % interactions.length];
+    await retryOperation(() => reportUsage(agent_id, request_text, response_text));
   }
 
-  rl.close();
-
-  console.log(chalk.magenta("⏳ All interactions completed. Waiting 24 hours before restarting..."));
+  console.log(chalk.magenta("\u23F3 All interactions completed. Waiting 24 hours before restarting..."));
   await new Promise(resolve => setTimeout(resolve, 24 * 60 * 60 * 1000)); // 24 hours delay
-  main(); // Restart the process after 24 hours
+  await main(numberOfInteractions); // Restart the process after 24 hours
 }
 
-const walletAddress = "WALLETADDRESS";
+const walletAddress = "ADDRESSWALLET";
 const postUrl = 'https://quests-usage-dev.prod.zettablock.com/api/report_usage';
+
+function loadInteractionsFromFile(filePath) {
+  const data = fs.readFileSync(filePath, 'utf-8');
+  return data.split('\n').filter(line => line).map(line => {
+    const [agent_id, request_text, response_text] = line.split('|');
+    return { agent_id, request_text, response_text };
+  });
+}
 
 async function retryOperation(operation, delay = 5000) {
   const spinner = ora('Processing...').start();
@@ -50,7 +48,7 @@ async function retryOperation(operation, delay = 5000) {
   while (true) {
     try {
       if (firstAttempt) {
-        console.log(chalk.cyan(`🔄 Trying interaction with wallet: ${walletAddress}`));
+        console.log(chalk.cyan(`\uD83D\uDD04 Trying interaction with wallet: ${walletAddress}`));
         firstAttempt = false;
       }
       await operation();
@@ -63,12 +61,12 @@ async function retryOperation(operation, delay = 5000) {
   }
 }
 
-async function reportUsage() {
+async function reportUsage(agent_id, request_text, response_text) {
   const postPayload = {
     wallet_address: walletAddress,
-    agent_id: "deployment_p5J9lz1Zxe7CYEoo0TZpRVay",
-    request_text: "What is Kite AI?",
-    response_text: "Kite AI is an EVM-compatible Layer 1 blockchain designed specifically for AI applications. It utilizes a unique consensus mechanism called Proof of AI (PoAI) to ensure fair and transparent attribution of contributions within the AI ecosystem. Kite AI includes tools for developers, data pools for advanced research, and an application marketplace, facilitating collaboration across industries and promoting the ownership and control of AI models and data.",
+    agent_id,
+    request_text,
+    response_text,
     request_metadata: null
   };
 
@@ -93,9 +91,9 @@ async function reportUsage() {
 
   if (!interactionId) throw new Error('interaction_id not found in the POST response!');
 
-  console.log(chalk.green(`✅ Success! Got interaction ID: ${interactionId}`));
+  console.log(chalk.green(`\u2705 Success! Got interaction ID: ${interactionId}`));
 
-  await retryOperation(() => submitInteraction(interactionId)); // Keep retrying until success
+  await retryOperation(() => submitInteraction(interactionId));
 }
 
 async function submitInteraction(interactionId) {
@@ -106,7 +104,7 @@ async function submitInteraction(interactionId) {
     'Content-Type': 'application/json'
   };
 
-  console.log(chalk.cyan(`🔄 Trying to submit interaction (${interactionId})...`));
+  console.log(chalk.cyan(`\uD83D\uDD04 Trying to submit interaction (${interactionId})...`));
 
   const response = await fetch(getUrl, { method: 'GET', headers });
   if (!response.ok) throw new Error(`GET request failed: ${response.status}`);
@@ -118,7 +116,7 @@ async function submitInteraction(interactionId) {
   const data = await response2.json();
   const txHash = data.tx_hash || chalk.gray("No transaction hash available");
 
-  console.log(chalk.green(`✅ Successfully submitted!`));
+  console.log(chalk.green(`\u2705 Successfully submitted!`));
   console.log(chalk.magenta(`______________________________________________________________________________`));
 
   await fetchUserStats();
@@ -146,9 +144,17 @@ async function fetchUserStats() {
   const totalInteractions = stats.total_interactions || chalk.gray('N/A');
   const lastActive = stats.last_active || chalk.gray('N/A');
 
-  console.log(chalk.yellow('📊 User Interaction Stats:'));
+  console.log(chalk.yellow('\ud83d\udcca User Interaction Stats:'));
   console.log(chalk.blue(`Total Interactions: ${totalInteractions}`));
   console.log(chalk.blue(`Last Active: ${lastActive}`));
 }
 
-main();
+process.on('SIGINT', () => {
+  console.log(chalk.red('\nProcess terminated by user.'));
+  process.exit(0);
+});
+
+(async () => {
+  const numberOfInteractions = process.argv[2] || 1;
+  await main(numberOfInteractions);
+})();
