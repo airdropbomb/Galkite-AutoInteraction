@@ -19,31 +19,54 @@ async function main(numberOfInteractions) {
   console.log(chalk.green("=== Telegram Channel : ADB Node ( @airdropbombnode ) ===\n"));
 
   const interactions = loadInteractionsFromFile('interactions.txt');
+  const wallets = loadWalletsFromFile('wallet.txt');
 
-  for (let i = 0; i < parseInt(numberOfInteractions); i++) {
-    console.log(chalk.blue(`\nProcessing interaction ${i + 1} of ${numberOfInteractions}`));
-    const { agent_id, request_text, response_text } = interactions[i % interactions.length];
-    await retryOperation(() => reportUsage(agent_id, request_text, response_text));
-    
-    // Add a delay of 30 seconds between interactions
-    console.log(chalk.yellow("\u23F3 Waiting 30 seconds before next interaction..."));
-    await new Promise(resolve => setTimeout(resolve, 30000));
+  if (wallets.length === 0) {
+    console.log(chalk.red('No wallets found in wallet.txt! Please add wallet addresses.'));
+    return;
   }
 
-  console.log(chalk.magenta("\u23F3 All interactions completed. Waiting 24 hours before restarting..."));
-  await new Promise(resolve => setTimeout(resolve, 24 * 60 * 60 * 1000)); // 24 hours delay
-  await main(numberOfInteractions); // Restart the process after 24 hours
+  for (const walletAddress of wallets) {
+    console.log(chalk.magenta(`\n=== Processing wallet: ${walletAddress} ===`));
+    
+    for (let i = 0; i < parseInt(numberOfInteractions); i++) {
+      console.log(chalk.blue(`\nProcessing interaction ${i + 1} of ${numberOfInteractions}`));
+      const { agent_id, request_text, response_text } = interactions[i % interactions.length];
+      await retryOperation(() => reportUsage(walletAddress, agent_id, request_text, response_text));
+      
+      console.log(chalk.yellow("\u23F3 Waiting 30 seconds before next interaction..."));
+      await new Promise(resolve => setTimeout(resolve, 30000));
+    }
+  }
+
+  console.log(chalk.magenta("\u23F3 All wallets completed. Waiting 24 hours before restarting..."));
+  await new Promise(resolve => setTimeout(resolve, 24 * 60 * 60 * 1000));
+  await main(numberOfInteractions);
 }
 
-const walletAddress = "ADDRESSWALLET";
-const postUrl = 'https://quests-usage-dev.prod.zettablock.com/api/report_usage';
+function loadWalletsFromFile(filePath) {
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return data.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+  } catch (error) {
+    console.log(chalk.red(`Error reading ${filePath}: ${error.message}`));
+    return [];
+  }
+}
 
 function loadInteractionsFromFile(filePath) {
-  const data = fs.readFileSync(filePath, 'utf-8');
-  return data.split('\n').filter(line => line).map(line => {
-    const [agent_id, request_text, response_text] = line.split('|');
-    return { agent_id, request_text, response_text };
-  });
+  try {
+    const data = fs.readFileSync(filePath, 'utf-8');
+    return data.split('\n').filter(line => line).map(line => {
+      const [agent_id, request_text, response_text] = line.split('|');
+      return { agent_id, request_text, response_text };
+    });
+  } catch (error) {
+    console.log(chalk.red(`Error reading ${filePath}: ${error.message}`));
+    return [];
+  }
 }
 
 async function retryOperation(operation, delay = 5000) {
@@ -52,20 +75,21 @@ async function retryOperation(operation, delay = 5000) {
   while (true) {
     try {
       if (firstAttempt) {
-        console.log(chalk.cyan(`\uD83D\uDD04 Trying interaction with wallet: ${walletAddress}`));
+        console.log(chalk.cyan(`\uD83D\uDD04 Trying interaction...`));
         firstAttempt = false;
       }
       await operation();
       spinner.succeed('Operation successful!');
       return;
-    } catch {
-      spinner.text = 'Retrying...';
+    } catch (error) {
+      spinner.text = `Retrying... (${error.message})`;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 }
 
-async function reportUsage(agent_id, request_text, response_text) {
+async function reportUsage(walletAddress, agent_id, request_text, response_text) {
+  const postUrl = 'https://quests-usage-dev.prod.zettablock.com/api/report_usage';
   const postPayload = {
     wallet_address: walletAddress,
     agent_id,
@@ -78,6 +102,8 @@ async function reportUsage(agent_id, request_text, response_text) {
     'Accept': '*/*',
     'Content-Type': 'application/json'
   };
+
+  console.log(chalk.cyan(`\uD83D\uDD04 Trying interaction with wallet: ${walletAddress}`));
 
   const response = await fetch(postUrl, {
     method: 'POST',
@@ -97,10 +123,10 @@ async function reportUsage(agent_id, request_text, response_text) {
 
   console.log(chalk.green(`\u2705 Success! Got interaction ID: ${interactionId}`));
 
-  await retryOperation(() => submitInteraction(interactionId));
+  await retryOperation(() => submitInteraction(interactionId, walletAddress));
 }
 
-async function submitInteraction(interactionId) {
+async function submitInteraction(interactionId, walletAddress) {
   const getUrl = `https://neo.prod.zettablock.com/v1/inference?id=${interactionId}`;
 
   const headers = {
@@ -123,10 +149,10 @@ async function submitInteraction(interactionId) {
   console.log(chalk.green(`\u2705 Successfully submitted!`));
   console.log(chalk.magenta(`______________________________________________________________________________`));
 
-  await fetchUserStats();
+  await fetchUserStats(walletAddress);
 }
 
-async function fetchUserStats() {
+async function fetchUserStats(walletAddress) {
   const statsUrl = `https://quests-usage-dev.prod.zettablock.com/api/user/${walletAddress}/stats`;
 
   const statsHeaders = {
