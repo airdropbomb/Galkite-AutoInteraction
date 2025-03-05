@@ -101,7 +101,7 @@ async function reportUsage(agent_id, request_text, response_text) {
 }
 
 async function submitInteraction(interactionId) {
-  const getUrl = `https://neo-dev.prod.zettablock.com/v1/inference?id=${interactionId}`;
+  const getUrl = `https://neo.prod.zettablock.com/v1/inference?id=${interactionId}`;
 
   const headers = {
     'Accept': '*/*',
